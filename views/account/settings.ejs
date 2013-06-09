@@ -1,0 +1,46 @@
+<% include ../_head %>
+
+  <form method="POST">
+  <article class="glass-view">
+    <section>
+      <div class="layout-figure">
+        <div class="">
+          <p class="text-normal">
+            Settings
+          </p>
+        </div>
+        <div class="text-x-small">
+          <p class="setting">Structures to control</p>
+          <select name="structure">
+            <%structures.forEach(function(s){%>
+              <option value="<%=s.id%>" <%=user.structure==s.id?"selected":""%>><%=s.name%></option>
+            <%})%>
+          </select>
+
+          <p class="setting">Device to control</p>
+          <select name="device">
+            <%devices.forEach(function(d){%>
+              <option value="<%=d.id%>" <%=user.device==d.id?"selected":""%>><%=d.name%></option>
+            <%})%>
+          </select>
+
+          <p class="setting">Display temp in</p>
+          <select name="celcius">
+            <option value="true"  <%=user.celcius?"selected":""%>>C</option>
+            <option value="false" <%=!user.celcius?"selected":""%>>F</option>
+          </select>
+        </div>
+      </div>
+    </section>
+    <footer>
+      <p style="float:right">
+        <button type="submit ali">Save</button>
+      </p>
+      <img src="http://i.imgur.com/lBERcCp.png" height="25px" />
+    </footer>
+  </article>
+  </form>
+
+  <% include ../_footer %>
+
+<% include ../_foot %>

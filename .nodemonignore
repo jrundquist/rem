@@ -1,0 +1,14 @@
+
+
+.git*
+logs/access.log
+/logs/*       # ignore all logs
+/logs*        # ignore all logs
+/public/*     # static files
+/public*      # static files
+/views/*      # view files
+/views*       # view files
+/node_modules/*
+*.log
+
+/.cache*
