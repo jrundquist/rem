@@ -1,13 +1,14 @@
 # Main application file
 #   Kicks off the whole show
 #
+
+util     = require './lib/util'
 app      = (require 'express')()
 port     = process.env.PORT or 8080
 mongoose = require 'mongoose'
 settings = require './lib/settings'
 errors   = require './lib/error-handler'
 google   = require 'googleapis'
-
 
 console.log "\n\nStarting in mode:", app.settings.env
 

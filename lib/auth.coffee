@@ -32,8 +32,8 @@ exports.bootEveryauth = (app) =>
         user.token = accessToken
         user.token_type = extra.token_type
         user.refresh_token = extra.refresh_token
-        user.save (err) ->
-          promise.fulfill user
+        user.save()
+        promise.fulfill user
       else
         user = new app.models.User(
           firstName: googleData.given_name
@@ -80,6 +80,8 @@ exports.bootEveryauth = (app) =>
     .scope(
       [
         'https://www.googleapis.com/auth/glass.timeline'
+        'https://www.googleapis.com/auth/plus.login'
+        'https://www.googleapis.com/auth/plus.me'
         'https://www.googleapis.com/auth/userinfo.profile'
       ].join ' '
     )
@@ -89,6 +91,36 @@ exports.bootEveryauth = (app) =>
       promise
     )
     .redirectPath('/post-login-check');
+
+
+
+
+  everyauth.twitter
+    .consumerKey(app.config.TWITTER_CONSUMER_KEY)
+    .consumerSecret(app.config.TWITTER_CONSUMER_SECRET)
+    .callbackPath('/oauth/callback/twitter')
+    .findOrCreateUser( (session, accessToken, accessTokenSecret, twitterUserData) ->
+      promise = @.Promise()
+      do (promise, session) ->
+        if session.auth?.loggedIn
+          app.models.User.findOne _id: session.auth.userId, (err, user) ->
+            return promise.fail err if err or not user
+            user.twitterAuth =
+              accessToken: accessToken
+              accessTokenSecret: accessTokenSecret
+            user.twitter =
+              id: twitterUserData.id
+              username: twitterUserData.screen_name
+              description: twitterUserData.description
+              location: twitterUserData.location
+              name: twitterUserData.name
+            user.save () ->
+              promise.fulfill user
+        else
+          promise.fail 'Not logged in'
+      promise
+    )
+    .redirectPath('/twitter/init')
 
 
 

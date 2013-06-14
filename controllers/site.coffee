@@ -1,5 +1,3 @@
-nest = require 'unofficial-nest-api'
-
 exports = module.exports = (app) ->
 
   app.get '/', (req, res) ->

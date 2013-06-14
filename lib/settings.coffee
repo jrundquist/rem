@@ -4,6 +4,7 @@ fs          = require 'fs'
 url         = require 'url'
 redis       = require 'redis'
 RedisStore  = require('connect-redis')(express)
+MongoStore  = require('connect-mongo')(express)
 helpers     = require './helpers'
 google      = require 'googleapis'
 
@@ -48,8 +49,13 @@ exports.boot = (app) ->
     redisURL     = url.parse(process.env.REDISCLOUD_URL)
     sessionStore = redis.createClient(redisURL.port, redisURL.hostname, no_ready_check: true)
     sessionStore.auth redisURL.auth?.split(":")[1]
-
     app.sessionStore = new RedisStore(client: sessionStore)
+
+    mongoURL     = url.parse(process.env.MONGOHQ_URL)
+    mongoURL.db  = mongoURL.path.replace '/', ''
+    [mongoURL.username, mongoURL.password] = [mongoURL.auth?.user, mongoURL.auth?.pass]
+
+    app.sessionStore = new MongoStore mongoURL
 
     app.use express.session(
       secret: app.config.SITE_SECRET
@@ -79,7 +85,9 @@ exports.boot = (app) ->
   app.set 'showStackError', false
 
 
-  # app.configure 'development', ()->
+  app.configure 'development', ()->
+    require("long-stack-traces")
+    console.log "enabling longer stacks"
   #   app.use express.errorHandler
   #     dumpExceptions: true
   #     showStack: true

@@ -1,11 +1,17 @@
 crypto    = require('crypto')
 algorithm = "aes256"
 key       = process.env.ENCRYPTION_KEY
-key2      = process.env.ENCRYPTION_KEY2
-nest      = require 'unofficial-nest-api'
-mongoose  = require('mongoose')
+mongoose  = require 'mongoose'
 Schema    = mongoose.Schema
 google    = require 'googleapis'
+
+neo4j     = require 'neo4j'
+db        = new neo4j.GraphDatabase process.env.NEO4J_URL || 'http://localhost:7474'
+
+
+USER_INDEX_NAME = 'users'
+USER_INDEX_KEY  = 'userId'
+
 
 # Schema Setup
 UserSchema = new Schema(
@@ -21,8 +27,12 @@ UserSchema = new Schema(
   _token_type: String
   _refresh_token: String
 
-)
+  twitter: {}
+  _twitterAuth: String
 
+  _node: {}
+
+)
 
 UserSchema.virtual('password')
   .get( () -> this._password )
@@ -63,6 +73,15 @@ UserSchema.virtual('refresh_token')
     this._refresh_token = @.encryptSecure JSON.stringify(obj)
   )
 
+UserSchema.virtual('twitterAuth')
+  .get( ()->
+    if @._twitterAuth
+      return JSON.parse(@.decryptSecure @._twitterAuth)
+    undefined
+  )
+  .set( (obj) ->
+    this._twitterAuth = @.encryptSecure JSON.stringify(obj)
+  )
 
 UserSchema.method('encryptSecure', (text) ->
   cipher = crypto.createCipher algorithm, key
@@ -98,10 +117,60 @@ UserSchema.method('credentials', () ->
   )
 
 
+UserSchema.post 'save', (next) ->
+  if not @._node
+    node = db.createNode id: @.id, name: @.name, firstName: @.firstName, lastName: @.lastName
+    node.save (err) =>
+      node.index USER_INDEX_NAME, USER_INDEX_KEY, @.id
+      @._node = node.id
+      @.save()
+  else
+    db.getNodeById @._node, (err, node) =>
+      node.data.firstName = @.firstName
+      node.data.lastName = @.lastName
+      node.data.name = @.name
+      node.save()
 
-UserSchema.pre 'save', (next) ->
-  @.modified = Date.now()
-  next()
+
+
+
+#######
+# Neo4j stuff
+#######
+
+
+
+UserSchema.method 'getNeo4jNode', (callback=(()->)) =>
+  db.getNodeById @._node, callback
+
+
+
+
+UserSchema.method 'createRelationshipTo', (otherUser, relation, data, callback=()->) ->
+  return callback(new Error('User does not have node in graph')) if not @._node
+  db.getNodeById @._node, (err, node) ->
+    return callback(err) if err
+    return callback(new Error('User does not have node')) if not node
+    if not otherUser._node
+      otherUser.save (err) ->
+        createLink(node)
+    else
+      createLink(node)
+
+  createLink = (node) ->
+    db.getNodeById otherUser._node, (err, other) ->
+      return callback(err) if err
+
+      node.getRelationshipNodes type: relation, direction: 'out', (err, adjacentNodes) ->
+        if adjacentNodes.filter((n)-> return n.id is other.id).length < 1
+          node.createRelationshipTo other, relation, data, callback
+        else
+          node.getRelationships relation, (err, relationships) ->
+            callback null, relationships.filter((n)->return n.end.id is other.id)[0]
+
+
+
+
 
 
 
