@@ -180,4 +180,18 @@ exports.boot = module.exports.boot = (app) ->
   mongoose.model 'User', UserSchema
   app.models.User = mongoose.model 'User'
 
+  app.models.User.findOrCreateByTwitterInfo = (twitterInfo, callback) ->
+    if typeof twitterInfo is 'string'
+      twitterInfo = id: twitterInfo
+    app.models.User.findOne 'twitter.id': twitterInfo.id, (err, user) ->
+      return callback(err) if err
+      return callback(null, user) if user
+      user = new app.models.User
+        twitter: twitterInfo
+        firstName: twitterInfo.name?.split(' ')[0]||twitterInfo.username
+        lastName: twitterInfo.name?.split(' ')[1..]||undefined
+      user.save () ->
+        callback null, user
+
+
 

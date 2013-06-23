@@ -85,9 +85,9 @@ exports.boot = (app) ->
   app.set 'showStackError', false
 
 
-  app.configure 'development', ()->
-    require("long-stack-traces")
-    console.log "enabling longer stacks"
+  # app.configure 'development', ()->
+  #   require("long-stack-traces")
+  #   console.log "enabling longer stacks"
   #   app.use express.errorHandler
   #     dumpExceptions: true
   #     showStack: true
