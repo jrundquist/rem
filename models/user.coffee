@@ -117,19 +117,39 @@ UserSchema.method('credentials', () ->
   )
 
 
-UserSchema.post 'save', (next) ->
-  if not @._node
+UserSchema.method 'ensureHasNode', (next) ->
+  if @.isNew
+    return next new Error('New Objects must be saved before nodes can be attached')
+  if @._node
+    return next null, @._node
+  else
     node = db.createNode id: @.id, name: @.name, firstName: @.firstName, lastName: @.lastName
     node.save (err) =>
-      node.index USER_INDEX_NAME, USER_INDEX_KEY, @.id
+      node.index USER_INDEX_NAME, 'id', @.id
+      node.index USER_INDEX_NAME, 'name', @.name
       @._node = node.id
-      @.save()
-  else
-    db.getNodeById @._node, (err, node) =>
-      node.data.firstName = @.firstName
-      node.data.lastName = @.lastName
-      node.data.name = @.name
-      node.save()
+      @.save (err) ->
+        next err, @._node
+
+
+# UserSchema.post 'save', (doc) ->
+#   console.log 'saving ',doc.id
+#   doc.ensureHasNode ()=>console.log arguments
+  # if typeof @._node is 'undefined'
+  #   node = db.createNode id: @.id, name: @.name, firstName: @.firstName, lastName: @.lastName
+  #   node.save (err) =>
+  #     node.index USER_INDEX_NAME, 'id', @.id
+  #     node.index USER_INDEX_NAME, 'name', @.name
+  #     @._node = node.id
+  #     @.save()
+  # else
+  #   db.getNodeById @._node, (err, node) =>
+  #     node.data.firstName = @.firstName
+  #     node.data.lastName = @.lastName
+  #     node.data.name = @.name
+  #     node.index USER_INDEX_NAME, 'id', @.id
+  #     node.index USER_INDEX_NAME, 'name', @.id
+  #     node.save()
 
 
 
@@ -147,7 +167,9 @@ UserSchema.method 'getNeo4jNode', (callback=(()->)) =>
 
 
 UserSchema.method 'createRelationshipTo', (otherUser, relation, data, callback=()->) ->
-  return callback(new Error('User does not have node in graph')) if not @._node
+  if not @._node
+    console.log "no _node\n\tSaving #{@.id}", @
+    return callback new Error('no node attached to user '+@)
   db.getNodeById @._node, (err, node) ->
     return callback(err) if err
     return callback(new Error('User does not have node')) if not node
@@ -176,6 +198,7 @@ UserSchema.method 'createRelationshipTo', (otherUser, relation, data, callback=(
 
 # Exports
 exports.UserSchema = module.exports.UserSchema = UserSchema
+
 exports.boot = module.exports.boot = (app) ->
   mongoose.model 'User', UserSchema
   app.models.User = mongoose.model 'User'
@@ -191,7 +214,8 @@ exports.boot = module.exports.boot = (app) ->
         firstName: twitterInfo.name?.split(' ')[0]||twitterInfo.username
         lastName: twitterInfo.name?.split(' ')[1..]||undefined
       user.save () ->
-        callback null, user
+        user.ensureHasNode do(user) -> (err, nodeId) ->
+          callback err, user
 
 
 

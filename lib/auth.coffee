@@ -45,8 +45,9 @@ exports.bootEveryauth = (app) =>
         user.token_type = extra.token_type
         user.refresh_token = extra.refresh_token
         user.save (err) ->
-          return promise.fail(err) if err
-          promise.fulfill user
+          user.ensureHasNode do(user) -> (err, nodeId) ->
+            return promise.fail(err) if err
+            promise.fulfill user
 
 
 
