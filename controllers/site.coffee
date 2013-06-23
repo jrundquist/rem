@@ -2,7 +2,10 @@ exports = module.exports = (app) ->
 
   app.get '/', (req, res) ->
     if req.user
-      res.render 'account'
+      if not req.user.twitter
+        res.redirect '/auth/twitter'
+      else
+        res.render 'account'
     else
       res.render 'index'
 
