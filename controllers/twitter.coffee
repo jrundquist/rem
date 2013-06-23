@@ -5,4 +5,7 @@ exports = module.exports = (app) ->
     user = req.user
     twitter = new twitterHelper(user.twitter.username, user.twitterAuth)
     twitter.setupUser user, true, (err, result) ->
-      res.json({err:err, result:result})
+      if not err
+        res.redirect '/' if not err
+      else
+        res.json err:err, result:result

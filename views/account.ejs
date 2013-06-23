@@ -1,6 +1,21 @@
 <% include _head %>
 
-  <h1>Welcome <%=user.name%>
+  <div class="">
+    <p class="text-large">
+      Welcome <%=user.name%>
+    </p>
+  </div>
+  <div class="">
+    <ul class="text-x-small">
+      <% if (!user.twitter) {%>
+      <li><a href="/auth/twitter">Link Twitter</a></li>
+      <%}%>
+      <li><a href="/twitter/init">Re-initalize twitter data</a></li>
+      <li><a href="/neo4j/setup">Setup neo4j nodes with info</a></li>
+    </ul>
+  </div>
+
+
 
   <% include _footer %>
 

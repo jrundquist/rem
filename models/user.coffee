@@ -4,14 +4,13 @@ key       = process.env.ENCRYPTION_KEY
 mongoose  = require 'mongoose'
 Schema    = mongoose.Schema
 google    = require 'googleapis'
+request   = require 'request'
 
 neo4j     = require 'neo4j'
 db        = new neo4j.GraphDatabase process.env.NEO4J_URL || 'http://localhost:7474'
 
 
 USER_INDEX_NAME = 'users'
-USER_INDEX_KEY  = 'userId'
-
 
 # Schema Setup
 UserSchema = new Schema(
@@ -160,10 +159,26 @@ UserSchema.method 'ensureHasNode', (next) ->
 
 
 
-UserSchema.method 'getNeo4jNode', (callback=(()->)) =>
-  db.getNodeById @._node, callback
+UserSchema.method 'getNeo4jNode', (callback=(()->)) ->
+  db.getNodeById @._node, (err, node) ->
+    return callback err if err
+    return callback new Error('Node not in neo4j') if not node
+    callback null, node
 
 
+UserSchema.method 'updateNeo4jNodeData', (dataToSet, callback=(()->)) ->
+  @.getNeo4jNode (err, node) ->
+    return callback(err) if err
+    for key,val of dataToSet
+      do(key, val) ->
+        if typeof val isnt 'undefined' and val isnt null
+          node.data[key] = val
+        else if typeof node.data[key] isnt 'undefined'
+          delete node.data[key]
+          request.del uri: "#{node.self}/properties/#{key}", headers: {'Accept': 'application/json'}, json: true
+
+    node.save (err) ->
+      callback err, node
 
 
 UserSchema.method 'createRelationshipTo', (otherUser, relation, data, callback=()->) ->
