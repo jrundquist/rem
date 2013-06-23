@@ -13,7 +13,6 @@ exports = module.exports = (app) ->
           name: user.name
           firstName: user.firstName
           lastName: user.lastName
-          random: undefined
         user.updateNeo4jNodeData data, do(data) -> (err, node) ->
           next err, {data:node.data, p:node.self}
       , (err, users) ->

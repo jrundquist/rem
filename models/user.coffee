@@ -175,7 +175,8 @@ UserSchema.method 'updateNeo4jNodeData', (dataToSet, callback=(()->)) ->
           node.data[key] = val
         else if typeof node.data[key] isnt 'undefined'
           delete node.data[key]
-          request.del uri: "#{node.self}/properties/#{key}", headers: {'Accept': 'application/json'}, json: true
+          # Request delete not nessisary if we just delete the property of the node, as a put is used on save
+          ##request.del uri: "#{node.self}/properties/#{key}", headers: {'Accept': 'application/json'}, json: true
 
     node.save (err) ->
       callback err, node
