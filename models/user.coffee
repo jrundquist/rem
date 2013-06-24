@@ -169,17 +169,24 @@ UserSchema.method 'getNeo4jNode', (callback=(()->)) ->
 UserSchema.method 'updateNeo4jNodeData', (dataToSet, callback=(()->)) ->
   @.getNeo4jNode (err, node) ->
     return callback(err) if err
-    for key,val of dataToSet
-      do(key, val) ->
-        if typeof val isnt 'undefined' and val isnt null
-          node.data[key] = val
-        else if typeof node.data[key] isnt 'undefined'
-          delete node.data[key]
-          # Request delete not nessisary if we just delete the property of the node, as a put is used on save
-          ##request.del uri: "#{node.self}/properties/#{key}", headers: {'Accept': 'application/json'}, json: true
 
-    node.save (err) ->
-      callback err, node
+    nodeChanged = false
+    for key,val of dataToSet
+      if typeof val isnt 'undefined' and val isnt null
+        if val isnt node.data[key]
+          nodeChanged = true
+          node.data[key] = val
+      else if typeof node.data[key] isnt 'undefined'
+        nodeChanged = true
+        delete node.data[key]
+        # Request delete not nessisary if we just delete the property of the node, as a put is used on save
+        ##request.del uri: "#{node.self}/properties/#{key}", headers: {'Accept': 'application/json'}, json: true
+
+    if nodeChanged
+      node.save (err) ->
+        callback err, node
+    else
+      callback null, node
 
 
 UserSchema.method 'createRelationshipTo', (otherUser, relation, data, callback=()->) ->
