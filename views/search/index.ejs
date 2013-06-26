@@ -1,0 +1,28 @@
+<% include ../_head %>
+
+  <form method="POST">
+    <input type="text" name="search" />
+    <button type="submit">Search</button>
+  </form>
+
+  <pre id="results" rows="100" cols="100"></pre>
+
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+  <script>
+  $('form').bind('submit', function(){
+    $this = $(this);
+    $.ajax({
+      url: '/search',
+      data: $this.serialize(),
+      type: 'POST',
+      dataType: 'json',
+      success: function(res){
+        res.time  = Date.now()
+        $('#results').html(JSON.stringify(res,null,2));
+      }
+    })
+    return false;
+  });
+  </script>
+<% include ../_foot %>
